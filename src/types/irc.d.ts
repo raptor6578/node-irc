@@ -60,7 +60,7 @@ interface INamesNicknames {
         username?: string;
         hostname?: string;
 
-    }
+    };
 }
 
 export interface ITopic {

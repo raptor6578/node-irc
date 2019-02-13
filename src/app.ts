@@ -1,5 +1,16 @@
-import {IAction, IJoinError, IJoinPart, IList, IMessage, INames, INick, INotice, IQuit, ITopic, IWhois} from './@types/irc';
-import { Client } from './irc';
+import {Client} from './irc';
+import {IAction,
+    IJoinError,
+    IJoinPart,
+    IList,
+    IMessage,
+    INames,
+    INick,
+    INotice,
+    IQuit,
+    ITopic,
+    IWhois,
+} from './types/irc';
 
 const client = new Client({
     port: 6667,

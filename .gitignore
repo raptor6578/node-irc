@@ -1,0 +1,12 @@
+/dist
+/node_modules
+
+# IDEs and editors
+/.idea
+/.history
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace

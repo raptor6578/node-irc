@@ -17,8 +17,8 @@ import {
     IQuit,
     ISupport,
     ITopic,
-    IWhois
-} from './@types/irc';
+    IWhois,
+} from './types/irc';
 
 export class Client extends Socket {
 
@@ -51,7 +51,7 @@ export class Client extends Socket {
     public nick$ = new Subject<INick>();
     public positiveChannelMode$ = new Subject<IChannelMode>();
     public negativeChannelMode$ = new Subject<IChannelMode>();
-    public buffer: string = '';
+    public buffer = '';
 
     constructor(params: IParams) {
         super();
@@ -65,12 +65,12 @@ export class Client extends Socket {
     private initializeEvent() {
 
         this.on('data', (data: any) => {
-            if (this.buffer.substr(-2,2) !== '\r\n') {
+            if (this.buffer.substr(-2, 2) !== '\r\n') {
                 this.buffer += data;
             } else {
                this.buffer = data;
             }
-            if (data.substr(-2,2) !== '\r\n') {
+            if (data.substr(-2, 2) !== '\r\n') {
                 return;
             }
             const lines = this.buffer.split('\r\n');
@@ -388,7 +388,7 @@ export class Client extends Socket {
     private err_joinchannel(data: string[]) {
         this.joinError$.next({
             channel: data[3],
-            error: this.string(data, 4).substr(1)
+            error: this.string(data, 4).substr(1),
         });
     }
 
@@ -489,7 +489,7 @@ export class Client extends Socket {
         this.quit$.next({
             nickname: mask.nickname,
             message: this.string(data, 2).substr(1),
-            channels: channelsQuit
+            channels: channelsQuit,
         });
     }
 
@@ -512,7 +512,7 @@ export class Client extends Socket {
         let message = this.string(data, 3);
         message = message.substr(1, message.length);
         if (message.substr(0, 7) === '\u0001ACTION' &&  message.substr(-1, 1) === '\u0001') {
-            message = message.substr(8, message.length - 9)
+            message = message.substr(8, message.length - 9);
             this.action$.next({server, username, hostname, nickname, to, message});
             return;
         } else if (message.substr(0, 1) === '\u0001' &&  message.substr(-1, 1) === '\u0001' && nickname) {
@@ -528,7 +528,8 @@ export class Client extends Socket {
         }
         this.connect(this.params.port, this.params.host, () => {
             if (this.params.webirc && this.params.webirc.pass && this.params.webirc.host && this.params.webirc.ip) {
-                this.write(`WEBIRC ${this.params.webirc.pass} ${this.params.username} ${this.params.webirc.host} ${this.params.webirc.ip}\r\n`);
+                this.write(`WEBIRC ${this.params.webirc.pass} ${this.params.username} ` +
+                `${this.params.webirc.host} ${this.params.webirc.ip}\r\n`);
             }
             if (this.params.password) {
                 this.write(`PASS ${this.params.password}\r\n`);
@@ -545,7 +546,7 @@ export class Client extends Socket {
 
     public join(channel: string) {
         const channels = channel.split(',');
-        for (let [index, channel] of Object.entries(channels)) {
+        for (const [index, channel] of Object.entries(channels)) {
             const numberChannel = Number(index) + 1;
             const prefixChannel = channel.substr(0, 1);
             const channelsLength = Object.keys(this.channels).length;
@@ -633,7 +634,7 @@ export class Client extends Socket {
     }
 
     private getSymbol(mode: string) {
-        return Object.keys(this.support.PREFIX).find(key => this.support.PREFIX[key] === mode);
+        return Object.keys(this.support.PREFIX).find((key) => this.support.PREFIX[key] === mode);
     }
 
 }
