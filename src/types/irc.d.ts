@@ -47,6 +47,12 @@ export interface ISupport {
     MAXCHANNELS?: number;
     NAMESX?: boolean;
     UHNAMES?: boolean;
+    CHANMODES?: {
+        a?: string;
+        b?: string;
+        c?: string;
+        d?: string;
+    };
 }
 
 export interface INames {
@@ -81,6 +87,9 @@ export interface IChannels {
     [key: string]: {
         users?: INamesNicknames;
         topic?: ITopic;
+        modes?: {
+            [key: string]: string;
+        };
     };
 }
 

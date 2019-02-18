@@ -164,6 +164,9 @@ export class Client extends Socket {
                 case '323':
                     this.rpl_listend(data);
                     break;
+                case '324':
+                    this.rpl_channelmodeis(data);
+                    break;
                 case '332':
                     this.rpl_topic(data);
                     break;
@@ -251,6 +254,26 @@ export class Client extends Socket {
                     case 'MAXCHANNELS':
                         this.support.MAXCHANNELS = Number(value);
                         break;
+                    case 'CHANMODES':
+                        this.support.CHANMODES = {};
+                        for (const [index, modes] of Object.entries(value.split(','))) {
+                            if (Number(index) === 0) {
+                                // Mode that adds or removes a nick or address to a list. Always has a parameter.
+                                this.support.CHANMODES.a = modes;
+                            }
+                            if (Number(index) === 1) {
+                                // Mode that changes a setting and always has a parameter.
+                                this.support.CHANMODES.b = modes;
+                            }
+                            if (Number(index) === 2) {
+                                // Mode that changes a setting and only has a parameter when set.
+                                this.support.CHANMODES.c = modes;
+                            }
+                            if (Number(index) === 3) {
+                                // Mode that changes a setting and never has a parameter.
+                                this.support.CHANMODES.d = modes;
+                            }
+                        }
                 }
             }
         }
@@ -385,6 +408,24 @@ export class Client extends Socket {
         this.list = [];
     }
 
+    private rpl_channelmodeis(data: string[]) {
+        const channel = data[3];
+        const modes = data[4].substr(1);
+        const arg = this.string(data, 5);
+        this.channels[channel].modes = {};
+        let countArg = 0;
+        for (const mode of modes.split('')) {
+            if (this.support.CHANMODES.b.includes(mode) ||
+                this.support.CHANMODES.c.includes(mode)) {
+
+                this.channels[channel].modes[mode] = arg.split(' ')[countArg];
+                countArg++;
+            } else if (this.support.CHANMODES.d.includes(mode)) {
+                this.channels[channel].modes[mode] = '';
+            }
+        }
+    }
+
     private err_joinchannel(data: string[]) {
         this.joinError$.next({
             channel: data[3],
@@ -397,7 +438,8 @@ export class Client extends Socket {
         const channel = data[2].replace(':', '');
         this.join$.next({ nickname, username, hostname, channel});
         if (nickname === this.params.nick) {
-            this.channels[channel] = { users: {}};
+            this.channels[channel] = { users: {}, modes: {}};
+            this.send(`MODE ${channel}`);
         } else if (this.channels[channel] && this.channels[channel].users) {
             this.channels[channel].users[nickname] = { modes: '' };
         }
@@ -445,31 +487,72 @@ export class Client extends Socket {
 
     private MODE(data: string[]) {
         const {nickname, username, hostname} = this.parseMask(data[0]);
-        const modes = data[3].substr(1, data[3].length);
+        const modes = data[3];
         const channel = data[2];
         const arg = this.string(data, 4);
-        if (data[3].substr(0, 1) === '+') {
-            for (const [index, mode] of Object.entries(modes.split(''))) {
+
+        let type = String();
+        let positiveChannelMode = String();
+        let negativeChannelMode = String();
+        for (const value of modes.split('')) {
+            if (value === '+') {
+                type = '+';
+            } else if (value === '-') {
+                type = '-';
+            } else if (type === '+') {
+                positiveChannelMode += value;
+            } else if (type === '-') {
+                negativeChannelMode += value;
+            }
+        }
+
+        let countArg = 0;
+
+        if (positiveChannelMode.length > 0 && this.channels[channel]) {
+            for (const mode of positiveChannelMode.split('')) {
                 if (Object.values(this.support.PREFIX).includes(mode)) {
-                    const nickArg = arg.split(' ')[Number(index)];
+                    const nickArg = arg.split(' ')[countArg];
+                    countArg++;
                     if (this.channels[channel].users &&
                         typeof this.channels[channel].users[nickArg] !== 'undefined') {
 
                         this.channels[channel].users[nickArg].modes += this.getSymbol(mode);
                     }
+
+                } else if (this.support.CHANMODES.a.includes(mode)) {
+                    countArg++;
+
+                } else if (this.support.CHANMODES.b.includes(mode) ||
+                    this.support.CHANMODES.c.includes(mode)) {
+
+                    this.channels[channel].modes[mode] = arg.split(' ')[countArg];
+                    countArg++;
+
+                } else if (this.support.CHANMODES.d.includes(mode)) {
+                    this.channels[channel].modes[mode] = '';
+
                 }
             }
             this.positiveChannelMode$.next({ nickname, username, hostname, channel, modes, arg});
+        }
 
-        } else if (data[3].substr(0, 1) === '-') {
-            for (const [index, mode] of Object.entries(modes.split(''))) {
+        if (negativeChannelMode.length > 0 && this.channels[channel]) {
+            for (const mode of negativeChannelMode.split('')) {
                 if (Object.values(this.support.PREFIX).includes(mode)) {
-                    const nickArg = arg.split(' ')[Number(index)];
+                    const nickArg = arg.split(' ')[countArg];
+                    countArg++;
                     if (this.channels[channel].users &&
+                        this.channels[channel].users[nickArg] &&
                         this.channels[channel].users[nickArg].modes.search(this.getSymbol(mode)) > -1) {
 
                         const modes = this.channels[channel].users[nickArg].modes;
                         this.channels[channel].users[nickArg].modes = modes.replace(this.getSymbol(mode), '');
+                    }
+                } else {
+                    delete this.channels[channel].modes[mode];
+                    if (this.support.CHANMODES.a.includes(mode) ||
+                        this.support.CHANMODES.b.includes(mode)) {
+                        countArg++;
                     }
                 }
             }
