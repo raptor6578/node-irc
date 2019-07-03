@@ -543,7 +543,7 @@ export class Client extends Socket {
                     countArg++;
                     if (this.channels[channel].users &&
                         this.channels[channel].users[nickArg] &&
-                        this.channels[channel].users[nickArg].modes.search(this.getSymbol(mode)) > -1) {
+                        this.channels[channel].users[nickArg].modes.indexOf(this.getSymbol(mode)) > -1) {
 
                         const modes = this.channels[channel].users[nickArg].modes;
                         this.channels[channel].users[nickArg].modes = modes.replace(this.getSymbol(mode), '');

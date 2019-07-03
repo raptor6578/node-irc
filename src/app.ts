@@ -1,5 +1,6 @@
 import {Client} from './irc';
-import {IAction,
+import {
+    IAction, IChannelMode,
     IJoinError,
     IJoinPart,
     IList,
@@ -13,12 +14,12 @@ import {IAction,
 } from './types/irc';
 
 const client = new Client({
-    port: 6667,
-    host: 'my-server.com',
-    nick: 'my-nickname',
-    username: 'my-username',
-    realname: 'my-realname',
-    autoJoin: '#my-channel',
+    port: 7776,
+    host: 'dialova',
+    nick: 'raptor',
+    username: 'webirc',
+    realname: 'DAMM Nicolas',
+    autoJoin: '#dialova',
 });
 
 client.raw$.subscribe((data: string) => {
@@ -83,4 +84,12 @@ client.nick$.subscribe((data: INick) => {
 
 client.error$.subscribe((data: string) => {
    // console.log(data);
+});
+
+client.positiveChannelMode$.subscribe((data: IChannelMode) => {
+    // console.log(data);
+});
+
+client.negativeChannelMode$.subscribe((data: IChannelMode) => {
+    // console.log(data);
 });
